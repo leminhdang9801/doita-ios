@@ -17,7 +17,12 @@ Hai bạn cùng đặt **mục tiêu** và **địa điểm** muốn đến. M�
 - Hai iPhone thật đăng nhập **hai Apple ID khác nhau** để thử chia sẻ (Simulator chạy được nhưng không chụp ảnh được)
 
 ## Chạy lần đầu
-1. Mở `DoiTa.xcodeproj` trong Xcode.
+1. Cài [XcodeGen](https://github.com/yonaskolb/XcodeGen) rồi sinh project (file `.xcodeproj` không đưa vào git):
+   ```bash
+   brew install xcodegen
+   xcodegen generate
+   open DoiTa.xcodeproj
+   ```
 2. Chọn target **DoiTa** › tab **Signing & Capabilities**:
    - **Team**: chọn team developer của bạn.
    - **Bundle Identifier**: mặc định `com.danle.doita` (đổi nếu bị trùng).
@@ -40,15 +45,18 @@ DoiTa/
 ├── Components/Components.swift   # Theme, Avatar, ảnh có cache, lưới ảnh, Camera
 └── Views/                        # Onboarding, Hành trình, Chi tiết, Thêm kỷ niệm, Kỷ niệm, Cài đặt
 Config/                           # Info.plist (CKSharingSupported) + entitlements iCloud
+project.yml                       # Cấu hình XcodeGen (sinh DoiTa.xcodeproj)
 ```
 
 **Mô hình dữ liệu** (tất cả trong một record zone `CoupleZone` được chia sẻ):
 
 | Record | Trường |
 |---|---|
-| `Goal` | title, note, kind (goal/place), placeName, targetDate, isCompleted, completedAt, createdBy |
-| `Memory` | goal (reference, xoá theo goal), image (CKAsset), createdBy |
-| `Comment` | goal (reference), text, mood, author |
+| `Goal` | title, note, kind (goal/place), placeName, targetDate, isCompleted, completedAt, createdBy, creatorID |
+| `Memory` | goal (reference, xoá theo goal), image (CKAsset), createdBy, creatorID |
+| `Comment` | goal (reference), text, mood, author, creatorID |
+
+`creatorID` là `recordName` của user iCloud, dùng để phân biệt "bạn" và "người ấy" trên từng bình luận.
 
 ## Gợi ý cho bước tiếp theo
 - Thêm push notification khi người ấy vừa thêm ảnh (CKDatabaseSubscription)
@@ -58,5 +66,7 @@ Config/                           # Info.plist (CKSharingSupported) + entitlemen
 - Cache dữ liệu offline bằng SwiftData
 
 ## Lưu ý
+- Code được viết mà chưa biên dịch thử trên Xcode thật (môi trường tạo code không có Swift/Xcode). Nếu Xcode báo lỗi biên dịch, hãy mở issue hoặc gửi log để sửa.
+- Đồng bộ dùng `recordZoneChanges` nên **không cần** tạo index "queryable" trong CloudKit Console; app tự làm mới mỗi 30 giây và khi mở lại app.
 - Link mời đang để chế độ *ai có link đều tham gia được* — chỉ gửi cho người ấy thôi nhé.
 - Người tạo bấm "Rời không gian chung" sẽ **xoá toàn bộ** dữ liệu của cả hai.

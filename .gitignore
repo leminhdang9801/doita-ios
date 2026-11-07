@@ -26,3 +26,6 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+
+# XcodeGen (sinh bằng `xcodegen generate`)
+*.xcodeproj
