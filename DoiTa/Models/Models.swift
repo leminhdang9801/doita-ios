@@ -1,9 +1,9 @@
-import CloudKit
+import Foundation
 import SwiftUI
 
 // MARK: - Loại mục
 
-enum GoalKind: String, CaseIterable, Identifiable {
+enum GoalKind: String, CaseIterable, Identifiable, Codable {
     case goal
     case place
 
@@ -26,7 +26,7 @@ enum GoalKind: String, CaseIterable, Identifiable {
 
 // MARK: - Phân loại
 
-enum GoalCategory: String, CaseIterable, Identifiable {
+enum GoalCategory: String, CaseIterable, Identifiable, Codable {
     case travel, food, date, milestone, other
 
     var id: String { rawValue }
@@ -64,7 +64,7 @@ enum GoalCategory: String, CaseIterable, Identifiable {
 
 // MARK: - Cảm xúc
 
-enum Mood: String, CaseIterable, Identifiable {
+enum Mood: String, CaseIterable, Identifiable, Codable {
     case love, happy, silly, touched, calm
 
     var id: String { rawValue }
@@ -92,9 +92,7 @@ enum Mood: String, CaseIterable, Identifiable {
 
 // MARK: - Goal (mục tiêu / địa điểm)
 
-struct Goal: Identifiable, Hashable {
-    static let recordType = "Goal"
-
+struct Goal: Identifiable, Hashable, Codable {
     let id: String
     var title: String
     var note: String
@@ -112,54 +110,56 @@ struct Goal: Identifiable, Hashable {
 
     var hasCoordinate: Bool { latitude != nil && longitude != nil }
 
-    init?(record: CKRecord) {
-        guard record.recordType == Goal.recordType else { return nil }
-        id = record.recordID.recordName
-        title = record["title"] as? String ?? ""
-        note = record["note"] as? String ?? ""
-        kind = GoalKind(rawValue: record["kind"] as? String ?? "") ?? .goal
-        category = GoalCategory(rawValue: record["category"] as? String ?? "") ?? .other
-        placeName = record["placeName"] as? String ?? ""
-        targetDate = record["targetDate"] as? Date
-        isCompleted = (record["isCompleted"] as? Int ?? 0) == 1
-        completedAt = record["completedAt"] as? Date
-        latitude = record["latitude"] as? Double
-        longitude = record["longitude"] as? Double
-        createdBy = record["createdBy"] as? String ?? ""
-        creatorID = record["creatorID"] as? String ?? ""
-        createdAt = record.creationDate ?? Date()
+    init(id: String = UUID().uuidString,
+         title: String,
+         note: String = "",
+         kind: GoalKind = .goal,
+         category: GoalCategory = .other,
+         placeName: String = "",
+         targetDate: Date? = nil,
+         isCompleted: Bool = false,
+         completedAt: Date? = nil,
+         latitude: Double? = nil,
+         longitude: Double? = nil,
+         createdBy: String = "",
+         creatorID: String = "",
+         createdAt: Date = Date()) {
+        self.id = id
+        self.title = title
+        self.note = note
+        self.kind = kind
+        self.category = category
+        self.placeName = placeName
+        self.targetDate = targetDate
+        self.isCompleted = isCompleted
+        self.completedAt = completedAt
+        self.latitude = latitude
+        self.longitude = longitude
+        self.createdBy = createdBy
+        self.creatorID = creatorID
+        self.createdAt = createdAt
     }
 }
 
 // MARK: - Memory (ảnh kỷ niệm)
 
-struct Memory: Identifiable, Hashable {
-    static let recordType = "Memory"
-
+struct Memory: Identifiable, Hashable, Codable {
     let id: String
     let goalID: String
-    let imageURL: URL?
+    let imageFileName: String
     let createdBy: String
     let creatorID: String
     let createdAt: Date
 
-    init?(record: CKRecord, imageURL: URL?) {
-        guard record.recordType == Memory.recordType,
-              let ref = record["goal"] as? CKRecord.Reference else { return nil }
-        id = record.recordID.recordName
-        goalID = ref.recordID.recordName
-        self.imageURL = imageURL
-        createdBy = record["createdBy"] as? String ?? ""
-        creatorID = record["creatorID"] as? String ?? ""
-        createdAt = record.creationDate ?? Date()
+    /// Ảnh được lưu trên máy; URL tính từ tên file.
+    var imageURL: URL? {
+        LocalStorePaths.imagesDir.appendingPathComponent(imageFileName)
     }
 }
 
 // MARK: - Comment (cảm nhận)
 
-struct Comment: Identifiable, Hashable {
-    static let recordType = "Comment"
-
+struct Comment: Identifiable, Hashable, Codable {
     let id: String
     let goalID: String
     let text: String
@@ -167,39 +167,17 @@ struct Comment: Identifiable, Hashable {
     let author: String
     let creatorID: String
     let createdAt: Date
-
-    init?(record: CKRecord) {
-        guard record.recordType == Comment.recordType,
-              let ref = record["goal"] as? CKRecord.Reference else { return nil }
-        id = record.recordID.recordName
-        goalID = ref.recordID.recordName
-        text = record["text"] as? String ?? ""
-        mood = Mood(rawValue: record["mood"] as? String ?? "")
-        author = record["author"] as? String ?? ""
-        creatorID = record["creatorID"] as? String ?? ""
-        createdAt = record.creationDate ?? Date()
-    }
 }
 
 // MARK: - CoupleSpace (thông tin chung của hai người)
 
-/// Lưu trong một record `Space` duy nhất (recordName cố định) trong zone,
-/// nên cả hai người cùng thấy ngày kỷ niệm và tên cặp đôi.
-struct CoupleSpace: Equatable {
-    static let recordType = "Space"
-    static let fixedName = "couple-space"
-
+struct CoupleSpace: Equatable, Codable {
     var anniversaryDate: Date?
     var coupleName: String
 
     init(anniversaryDate: Date? = nil, coupleName: String = "") {
         self.anniversaryDate = anniversaryDate
         self.coupleName = coupleName
-    }
-
-    init(record: CKRecord) {
-        anniversaryDate = record["anniversaryDate"] as? Date
-        coupleName = record["coupleName"] as? String ?? ""
     }
 }
 
@@ -220,7 +198,6 @@ struct Milestone: Identifiable, Hashable {
 }
 
 enum Milestones {
-    /// Các mốc ngày (100, 200, … 1000) và tròn năm (1–10 năm) tính từ ngày bắt đầu yêu.
     static func all(from start: Date) -> [Milestone] {
         let cal = Calendar.current
         let day0 = cal.startOfDay(for: start)
@@ -239,7 +216,6 @@ enum Milestones {
         return result.sorted { $0.date < $1.date }
     }
 
-    /// Mốc sắp tới gần nhất (chưa qua).
     static func next(from start: Date) -> Milestone? {
         all(from: start).first { !$0.isPast }
     }

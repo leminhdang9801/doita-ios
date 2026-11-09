@@ -57,7 +57,7 @@ struct SettingsView: View {
                         Label("Làm mới dữ liệu", systemImage: "arrow.clockwise")
                     }
                 } footer: {
-                    Text("Dữ liệu được đồng bộ qua iCloud (CloudKit). Mỗi người dùng iPhone và Apple ID của mình.")
+                    Text("Bản này lưu dữ liệu ngay trên máy (local). Phần ghép đôi & đồng bộ iCloud sẽ bật khi có tài khoản Apple Developer trả phí.")
                 }
 
                 Section {
