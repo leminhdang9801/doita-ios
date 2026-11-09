@@ -3,6 +3,7 @@ import SwiftUI
 struct JourneyView: View {
     @EnvironmentObject private var store: CoupleStore
     @State private var filter: Filter = .pending
+    @State private var categoryFilter: GoalCategory?
     @State private var showEditor = false
     @State private var goalToDelete: Goal?
 
@@ -13,9 +14,10 @@ struct JourneyView: View {
     }
 
     private var filtered: [Goal] {
+        let byCategory = { (g: Goal) in categoryFilter == nil || g.category == categoryFilter }
         switch filter {
         case .pending:
-            return store.goals.filter { !$0.isCompleted }.sorted { a, b in
+            return store.goals.filter { !$0.isCompleted && byCategory($0) }.sorted { a, b in
                 switch (a.targetDate, b.targetDate) {
                 case let (x?, y?): return x < y
                 case (_?, nil): return true
@@ -24,7 +26,7 @@ struct JourneyView: View {
                 }
             }
         case .done:
-            return store.goals.filter { $0.isCompleted }.sorted {
+            return store.goals.filter { $0.isCompleted && byCategory($0) }.sorted {
                 ($0.completedAt ?? .distantPast) > ($1.completedAt ?? .distantPast)
             }
         }
@@ -61,6 +63,24 @@ struct JourneyView: View {
                     .pickerStyle(.segmented)
                     .listRowBackground(Color.clear)
                     .listRowInsets(EdgeInsets())
+
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            CategoryChip(title: "Tất cả", icon: "square.grid.2x2", color: Theme.accent,
+                                         selected: categoryFilter == nil) {
+                                categoryFilter = nil
+                            }
+                            ForEach(GoalCategory.allCases) { cat in
+                                CategoryChip(title: cat.title, icon: cat.icon, color: cat.color,
+                                             selected: categoryFilter == cat) {
+                                    categoryFilter = categoryFilter == cat ? nil : cat
+                                }
+                            }
+                        }
+                        .padding(.vertical, 2)
+                    }
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
                 }
 
                 Section {
@@ -136,6 +156,26 @@ struct JourneyView: View {
     }
 }
 
+struct CategoryChip: View {
+    let title: String
+    let icon: String
+    let color: Color
+    let selected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Label(title, systemImage: icon)
+                .font(.caption.weight(.medium))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background(selected ? color : Color(.tertiarySystemFill), in: Capsule())
+                .foregroundStyle(selected ? .white : .primary)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 struct ProgressCard: View {
     let done: Int
     let total: Int
@@ -172,10 +212,19 @@ struct GoalRow: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(goal.title).font(.headline)
-                if goal.kind == .place, !goal.placeName.isEmpty {
-                    Label(goal.placeName, systemImage: "mappin")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                HStack(spacing: 6) {
+                    Label(goal.category.title, systemImage: goal.category.icon)
+                        .font(.caption2.weight(.semibold))
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 2)
+                        .background(goal.category.color.opacity(0.15), in: Capsule())
+                        .foregroundStyle(goal.category.color)
+                    if goal.kind == .place, !goal.placeName.isEmpty {
+                        Label(goal.placeName, systemImage: "mappin")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
                 }
                 if goal.isCompleted {
                     if let done = goal.completedAt {

@@ -7,6 +7,7 @@ struct GoalEditorView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var kind: GoalKind = .goal
+    @State private var category: GoalCategory = .date
     @State private var title = ""
     @State private var placeName = ""
     @State private var note = ""
@@ -35,6 +36,30 @@ struct GoalEditorView: View {
                     }
                     TextField("Ghi chú", text: $note, axis: .vertical)
                         .lineLimit(2...5)
+                }
+
+                Section("Phân loại") {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(GoalCategory.allCases) { cat in
+                                let selected = category == cat
+                                Button {
+                                    category = cat
+                                } label: {
+                                    Label(cat.title, systemImage: cat.icon)
+                                        .font(.subheadline.weight(.medium))
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 8)
+                                        .background(selected ? cat.color : Color(.tertiarySystemFill),
+                                                    in: Capsule())
+                                        .foregroundStyle(selected ? .white : .primary)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.vertical, 2)
+                    }
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                 }
 
                 Section {
@@ -83,6 +108,7 @@ struct GoalEditorView: View {
         loaded = true
         guard let goal else { return }
         kind = goal.kind
+        category = goal.category
         title = goal.title
         placeName = goal.placeName
         note = goal.note
@@ -102,6 +128,7 @@ struct GoalEditorView: View {
                     title: title.trimmed,
                     note: note.trimmed,
                     kind: kind,
+                    category: category,
                     placeName: placeName.trimmed,
                     targetDate: targetDate
                 )
@@ -110,6 +137,7 @@ struct GoalEditorView: View {
                     title: title.trimmed,
                     note: note.trimmed,
                     kind: kind,
+                    category: category,
                     placeName: placeName.trimmed,
                     targetDate: targetDate
                 )

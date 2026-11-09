@@ -1,3 +1,4 @@
+import CoreLocation
 import PhotosUI
 import SwiftUI
 
@@ -6,12 +7,14 @@ struct AddMemoryView: View {
     let goalID: String
     @EnvironmentObject private var store: CoupleStore
     @Environment(\.dismiss) private var dismiss
+    @StateObject private var location = LocationProvider()
 
     @State private var images: [UIImage] = []
     @State private var pickerItems: [PhotosPickerItem] = []
     @State private var showCamera = false
     @State private var mood: Mood?
     @State private var text = ""
+    @State private var attachLocation = true
 
     private var goal: Goal? { store.goals.first { $0.id == goalID } }
     private var cameraAvailable: Bool { UIImagePickerController.isSourceTypeAvailable(.camera) }
@@ -69,6 +72,12 @@ struct AddMemoryView: View {
                             .padding(12)
                             .background(Theme.card, in: RoundedRectangle(cornerRadius: 14))
                     }
+
+                    Toggle(isOn: $attachLocation) {
+                        Label("Lưu vị trí nơi này", systemImage: "location.fill")
+                            .font(.subheadline)
+                    }
+                    .tint(Theme.accent)
                 }
                 .padding()
             }
@@ -128,7 +137,11 @@ struct AddMemoryView: View {
         let chosenMood = mood
         let feeling = text
         Task {
-            if await store.saveMemory(goalID: goalID, images: photos, mood: chosenMood, text: feeling) {
+            var coordinate: CLLocationCoordinate2D?
+            if attachLocation {
+                coordinate = await location.requestLocation()
+            }
+            if await store.saveMemory(goalID: goalID, images: photos, mood: chosenMood, text: feeling, coordinate: coordinate) {
                 dismiss()
             }
         }

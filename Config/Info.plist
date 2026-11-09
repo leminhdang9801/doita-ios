@@ -30,6 +30,8 @@
 	<string>Đôi Ta cần dùng camera để chụp ảnh kỷ niệm của hai bạn.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Đôi Ta cần quyền này để lưu ảnh kỷ niệm về thư viện Ảnh.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Đôi Ta dùng vị trí để đánh dấu nơi hai bạn đã đến lên bản đồ kỷ niệm.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

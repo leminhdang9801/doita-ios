@@ -89,14 +89,25 @@ struct RootView: View {
 }
 
 struct MainTabView: View {
+    @EnvironmentObject private var store: CoupleStore
+
     var body: some View {
         TabView {
+            HomeView()
+                .tabItem { Label("Chúng mình", systemImage: "heart.fill") }
             JourneyView()
-                .tabItem { Label("Hành trình", systemImage: "heart.text.square.fill") }
+                .tabItem { Label("Hành trình", systemImage: "flag.checkered") }
+            MapMemoriesView()
+                .tabItem { Label("Bản đồ", systemImage: "map.fill") }
             MemoriesView()
                 .tabItem { Label("Kỷ niệm", systemImage: "photo.on.rectangle.angled") }
             SettingsView()
                 .tabItem { Label("Cài đặt", systemImage: "gearshape.fill") }
+        }
+        .task {
+            // Chuẩn bị dữ liệu phụ khi vào app: geocode địa điểm, đặt lại nhắc cột mốc.
+            await store.geocodePlaces()
+            await LoveNotifications.scheduleMilestones(from: store.space.anniversaryDate)
         }
     }
 }
